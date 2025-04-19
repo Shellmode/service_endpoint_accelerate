@@ -57,17 +57,14 @@ This demo showcases acceleration for a client located in Singapore (non-AWS serv
    - Create all necessary resources
    - Configure networking and security
    - Save resource IDs to the `env` file
-   - Output the NLB DNS name for client access
 
-## Cleanup
-
-To remove all created resources:
+Upon successful deployment, the script will output the NLB DNS name for client access:
 
 ```bash
-./cleanup.sh
+===== Deployment completed successfully =====
+Thu Apr 17 11:47:44 CST 2025: All scripts have been executed
+NLB URL: https://service-peering-nlb-1234567890.elb.ap-southeast-1.amazonaws.com
 ```
-
-This script will delete all resources created during deployment, using the information stored in the `env` file.
 
 ## Deployment Process
 
@@ -79,6 +76,67 @@ The solution is deployed through a series of scripts executed in sequence:
 4. `4.vpc_peering.sh`: Establishes VPC peering between the two VPCs
 5. `5.update_route_table.sh`: Updates route tables to enable traffic flow
 6. `6.expose_nlb_deploy.sh`: Deploys the NLB in the client-proximate region
+
+## How to Use the Deployed NLB for Acceleration in Code
+
+### Option 1: Modify endpoint_url and Skip TLS Certificate Verification
+
+Principle:
+* The SDK accesses the NLB address as the service endpoint
+* TLS certificate verification needs to be skipped because the NLB only forwards network traffic, but the SDK accesses an HTTPS address on the NLB, which would fail TLS certificate validation
+
+Python demo:
+
+```python
+import urllib3
+import boto3
+urllib3.disable_warnings()
+
+...
+sm_client = boto3.client(
+    'sagemaker-runtime',
+    region_name="ap-southeast-3", # region where the SageMaker endpoint is located
+    endpoint_url="https://service-peering-nlb-1234567890.elb.ap-southeast-1.amazonaws.com", # accelerated NLB URL
+    verify = False # skip TLS certificate verification
+)
+...
+```
+
+Golang demo:
+
+```go
+http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+// Create AWS session
+sess := session.Must(session.NewSession(&aws.Config{
+  Region:   aws.String("ap-southeast-3"),
+  Endpoint: aws.String("https://service-peering-nlb-1234567890.elb.ap-southeast-1.amazonaws.com"),
+}))
+
+// Create SageMaker Runtime client
+sagemakerClient := sagemakerruntime.New(sess)
+```
+
+### Option 2: Modify Host
+
+Directly modify the host of the original service endpoint to the NLB's IP address (it's recommended to bind an EIP to the NLB in this case), for example:
+
+```bash
+cat /etc/hosts
+
+xx.xx.yy.yy runtime.sagemaker.ap-southeast-3.amazonaws.com
+```
+
+With this method, you don't need to skip TLS certificate verification in your code.
+
+## Cleanup
+
+To remove all created resources:
+
+```bash
+./cleanup.sh
+```
+
+This script will delete all resources created during deployment, using the information stored in the `env` file.
 
 ## Notes
 

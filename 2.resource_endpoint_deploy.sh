@@ -11,8 +11,8 @@ SUBNET2_ID=$RESOURCE_SUBNET2_ID
 SG_ID=$RESOURCE_SG_ID
 VPC_ENDPOINT_NAME=$RESOURCE_VPC_ENDPOINT_NAME
 
-# 创建 VPC Endpoint
-echo -e "[${GREEN}2.resource_endpoint_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 创建 VPC endpoint..."
+# Create VPC Endpoint
+echo -e "[${GREEN}2.resource_endpoint_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Creating VPC endpoint..."
 aws ec2 create-vpc-endpoint \
     --region $REGION \
     --vpc-id $VPC_ID \
@@ -26,22 +26,22 @@ aws ec2 create-vpc-endpoint \
     --tag-specifications "ResourceType=vpc-endpoint,Tags=[{Key=Name,Value=$VPC_ENDPOINT_NAME}]" \
     --subnet-configurations "[{\"SubnetId\":\"$SUBNET1_ID\",\"Ipv4\":\"10.1.128.66\"},{\"SubnetId\":\"$SUBNET2_ID\",\"Ipv4\":\"10.1.144.66\"}]"
 
-# 获取 VPC Endpoint ID
+# Get VPC Endpoint ID
 VPC_ENDPOINT_ID=$(aws ec2 describe-vpc-endpoints \
     --region $REGION \
     --filters "Name=vpc-id,Values=$VPC_ID" "Name=service-name,Values=$SERVICE_NAME" \
     --query "VpcEndpoints[0].VpcEndpointId" \
     --output text)
 
-# 不等待 VPC Endpoint 创建完成，只记录 ID
-echo -e "[${GREEN}2.resource_endpoint_deploy.sh${NC}] [${YELLOW}$REGION${NC}] VPC Endpoint 正在创建中，ID: $VPC_ENDPOINT_ID"
+# Don't wait for VPC Endpoint creation to complete, just record the ID
+echo -e "[${GREEN}2.resource_endpoint_deploy.sh${NC}] [${YELLOW}$REGION${NC}] VPC Endpoint is being created, ID: $VPC_ENDPOINT_ID"
 
-# 更新环境变量文件
-echo -e "[${GREEN}2.resource_endpoint_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 更新环境变量文件..."
+# Update environment variables file
+echo -e "[${GREEN}2.resource_endpoint_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Updating environment variables file..."
 # Append to env
 cat >> ./env << EOF
 export RESOURCE_VPC_ENDPOINT_ID="$VPC_ENDPOINT_ID"
 EOF
 
-echo -e "[${GREEN}2.resource_endpoint_deploy.sh${NC}] [${YELLOW}$REGION${NC}] VPC Endpoint 创建已启动"
+echo -e "[${GREEN}2.resource_endpoint_deploy.sh${NC}] [${YELLOW}$REGION${NC}] VPC Endpoint creation has been initiated"
 echo -e "[${GREEN}2.resource_endpoint_deploy.sh${NC}] [${YELLOW}$REGION${NC}] VPC Endpoint ID: $VPC_ENDPOINT_ID"

@@ -57,17 +57,14 @@
    - 创建所有必要的资源
    - 配置网络和安全设置
    - 将资源 ID 保存到 `env` 文件
-   - 输出用于客户端访问的 NLB DNS 名称
 
-## 清理
-
-要删除所有创建的资源：
+最终部署完成会输出用于客户端访问的 NLB DNS 名称
 
 ```bash
-./cleanup.sh
+===== Deployment completed successfully =====
+Thu Apr 17 11:47:44 CST 2025: All scripts have been executed
+NLB URL: https://service-peering-nlb-1234567890.elb.ap-southeast-1.amazonaws.com
 ```
-
-此脚本将使用存储在 `env` 文件中的信息删除部署期间创建的所有资源。
 
 ## 部署流程
 
@@ -79,6 +76,72 @@
 4. `4.vpc_peering.sh`：建立两个 VPC 之间的对等连接
 5. `5.update_route_table.sh`：更新路由表以启用流量流动
 6. `6.expose_nlb_deploy.sh`：在靠近客户端的区域部署 NLB
+
+## 代码中如何使用部署的 NLB 进行加速
+
+### Option1: 修改 endpoint_url，跳过 TLS 证书验证
+
+原理：
+
+* SDK 访问 NLB 的地址，作为 service 的 endpoint
+* 需要跳过 TLS 证书校验，因为 NLB 只做网络转发，但是 SDK 访问的 https 地址是 NLB，如果校验 TLS 证书则无法匹配
+
+Python demo
+
+```python
+import urllib3
+import boto3
+urllib3.disable_warnings()
+
+...
+sm_client = boto3.client(
+    'sagemaker-runtime',
+    region_name="ap-southeast-3", # sagemaker endpoint 所在 region
+    endpoint_url="https://service-peering-nlb-1234567890.elb.ap-southeast-1.amazonaws.com", # 加速 NLB URL
+    verify = False # 不验证 TLS 证书
+)
+...
+```
+
+Golang demo
+
+```go
+http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+// 创建 AWS 会话
+sess := session.Must(session.NewSession(&aws.Config{
+  Region:   aws.String("ap-southeast-3"),
+  Endpoint: aws.String("https://service-peering-nlb-1234567890.elb.ap-southeast-1.amazonaws.com"),
+}))
+
+// 创建 SageMaker Runtime 客户端
+sagemakerClient := sagemakerruntime.New(sess)
+```
+
+### Option2: 修改 host
+
+直接在调用端修改原本 service endpoint 的 host 到 NLB 的 ip 即可（此时建议 NLB 绑定 EIP），例如
+
+```bash
+cat /etc/hosts
+
+xx.xx.yy.yy runtime.sagemaker.ap-southeast-3.amazonaws.com
+```
+
+用这种方法在代码中不需要跳过 TLS 证书校验
+
+
+
+## 清理
+
+要删除所有创建的资源：
+
+```bash
+./cleanup.sh
+```
+
+此脚本将使用存储在 `env` 文件中的信息删除部署期间创建的所有资源。
+
+
 
 ## 注意事项
 

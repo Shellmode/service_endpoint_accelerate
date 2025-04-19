@@ -93,8 +93,8 @@ aws ec2 associate-route-table \
   --no-cli-pager
 echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Route table associated with subnet 2 successfully"
 
-# 创建安全组
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 创建安全组..."
+# Create security group
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Creating security group..."
 SG_ID=$(aws ec2 create-security-group \
   --group-name "$VPC_NAME-sg" \
   --description "Security group for $VPC_NAME VPC" \
@@ -103,11 +103,11 @@ SG_ID=$(aws ec2 create-security-group \
   --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value=$VPC_NAME-sg}]" \
   --query 'GroupId' \
   --output text)
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 安全组创建成功: $SG_ID"
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Security group created successfully: $SG_ID"
 
-# 添加安全组规则
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 添加安全组规则..."
-# 规则1: 允许来自任何地方的443端口访问
+# Add security group rules
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Adding security group rules..."
+# Rule 1: Allow access to port 443 from anywhere
 aws ec2 authorize-security-group-ingress \
   --group-id $SG_ID \
   --protocol tcp \
@@ -115,19 +115,19 @@ aws ec2 authorize-security-group-ingress \
   --cidr 0.0.0.0/0 \
   --region $REGION \
   --no-cli-pager
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 安全组规则1添加成功: 允许来自任何地方的443端口访问"
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Security group rule 1 added successfully: Allow access to port 443 from anywhere"
 
-# 规则2: 允许安全组内部的所有流量
+# Rule 2: Allow all traffic within the security group
 aws ec2 authorize-security-group-ingress \
   --group-id $SG_ID \
   --protocol all \
   --source-group $SG_ID \
   --region $REGION \
   --no-cli-pager
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 安全组规则2添加成功: 允许安全组内部的所有流量"
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Security group rule 2 added successfully: Allow all traffic within the security group"
 
-# 更新环境变量文件
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 更新环境变量文件..."
+# Update environment variables file
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Updating environment variables file..."
 # Append to env
 cat >> ./env << EOF
 export RESOURCE_VPC_ID="$VPC_ID"
@@ -137,10 +137,10 @@ export RESOURCE_SG_ID="$SG_ID"
 export RESOURCE_ROUTE_TABLE_ID="$ROUTE_TABLE_ID"
 EOF
 
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] VPC 创建完成"
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] VPC creation completed"
 echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] VPC ID: $VPC_ID"
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 子网1 ID: $SUBNET1_ID"
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 子网2 ID: $SUBNET2_ID"
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 路由表 ID: $ROUTE_TABLE_ID"
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 安全组 ID: $SG_ID"
-echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] 所需资源信息已保存到 ./env"
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Subnet 1 ID: $SUBNET1_ID"
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Subnet 2 ID: $SUBNET2_ID"
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Route table ID: $ROUTE_TABLE_ID"
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Security group ID: $SG_ID"
+echo -e "[${GREEN}1.resource_vpc_deploy.sh${NC}] [${YELLOW}$REGION${NC}] Required resource information has been saved to ./env"
